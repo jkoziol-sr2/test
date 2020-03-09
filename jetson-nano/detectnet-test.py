@@ -50,32 +50,52 @@ net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
-display = jetson.utils.glDisplay()
+#display = jetson.utils.glDisplay()
 
-print("processing..")
+print("waiting for detections to change..")
+
+image_written = False
+last_detection_count = 0
+#print("detected 0 objects in image".format(len(detections)))
+
 # process frames until user exits
 try:
     while True: #display.IsOpen():
-	# capture the image
-	img, width, height = camera.CaptureRGBA()
+            # capture the image
+            #img, width, height = camera.CaptureRGBA()
+            img, width, height = camera.CaptureRGBA()
 
-	# detect objects in the image (with overlay)
-	detections = net.Detect(img, width, height, opt.overlay)
+            if image_written == False:
+                print("writing image")
+                #print(str(jetson.utils.cudaToNumpy(img,width,height,3)))
+                jetson.utils.cudaToNumpy(img,width,height,3)
+                image_written = True
+            else:
+                print("already wrote")
 
-	# print the detections
-	print("detected {:d} objects in image".format(len(detections)))
+            # detect objects in the image (with overlay)
+            detections = net.Detect(img, width, height, opt.overlay)
 
-	for detection in detections:
-	print(detection)
+            # print the detections
+            print("detected {:d} objects in image".format(len(detections)))
 
-	# render the image
-	display.RenderOnce(img, width, height)
+            if len(detections) != last_detection_count:
+                last_detection_count = len(detections)
+                if len(detections) > 0:
+                    print(detections[0])
 
-	# update the title bar
-	display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
+            #for detection in detections:
+            #   print(detection)
 
-	# print out performance info
-	net.PrintProfilerTimes()
+            # render the image
+            #display.RenderOnce(img, width, height)
+
+            # update the title bar
+            #display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
+
+            # print out performance info
+            #net.PrintProfilerTimes()
+            time.sleep(1)
 
 except KeyboardInterrupt:
     pass
