@@ -52,8 +52,10 @@ net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
 display = jetson.utils.glDisplay()
 
+print("processing..")
 # process frames until user exits
-while display.IsOpen():
+try:
+    while True: #display.IsOpen():
 	# capture the image
 	img, width, height = camera.CaptureRGBA()
 
@@ -64,7 +66,7 @@ while display.IsOpen():
 	print("detected {:d} objects in image".format(len(detections)))
 
 	for detection in detections:
-		print(detection)
+	print(detection)
 
 	# render the image
 	display.RenderOnce(img, width, height)
@@ -75,3 +77,7 @@ while display.IsOpen():
 	# print out performance info
 	net.PrintProfilerTimes()
 
+except KeyboardInterrupt:
+    pass
+
+print("exiting.")
