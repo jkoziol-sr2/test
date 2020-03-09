@@ -50,7 +50,14 @@ net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
+
 #display = jetson.utils.glDisplay()
+
+server = smtplib.SMTP('localhost')
+server.set_debuglevel(1)
+server.sendmail("jkoziol@sr2", "Alerts@SafetyRange.com", "From: jkoziol@sr2\r\nTo: Alerts@SafetyRange.com\r\nSubject: detector startup\r\n\r\ndetector startup")
+server.quit()
+print("sent startup email")
 
 print("waiting for detections to change..")
 
@@ -83,6 +90,11 @@ try:
                 last_detection_count = len(detections)
                 if len(detections) > 0:
                     print(detections[0])
+                    server = smtplib.SMTP('localhost')
+                    server.set_debuglevel(1)
+                    server.sendmail("jkoziol@sr2", "Alerts@SafetyRange.com", "From: jkoziol@sr2\r\nTo: Alerts@SafetyRange.com\r\nSubject: detection\r\n\r\ndetected: " + str(len(detections)))
+                    server.quit()
+                    print("sent detection email")
 
             #for detection in detections:
             #   print(detection)
