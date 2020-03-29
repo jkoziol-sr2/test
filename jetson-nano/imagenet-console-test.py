@@ -26,6 +26,7 @@ import jetson.utils
 
 import argparse
 import sys
+import ctypes
 
 # parse the command line
 parser = argparse.ArgumentParser(description="Classify an image using an image recognition DNN.", 
@@ -34,6 +35,9 @@ parser = argparse.ArgumentParser(description="Classify an image using an image r
 parser.add_argument("file_in", type=str, help="filename of the input image to process")
 parser.add_argument("file_out", type=str, default=None, nargs='?', help="filename of the output image to save")
 parser.add_argument("--network", type=str, default="googlenet", help="pre-trained model to load (see below for options)")
+parser.add_argument("--width", type=int, default=1280, help="desired width of camera stream (default is 1280 pixels)")
+parser.add_argument("--height", type=int, default=720, help="desired height of camera stream (default is 720 pixels)")
+parser.add_argument("--camera", type=str, default="/dev/video0", help="index of the MIPI CSI camera to use (e.g. CSI camera 0)\nor for VL42 cameras, the /dev/video device to use.\nby default, MIPI CSI camera 0 will be used.")
 
 try:
 	opt = parser.parse_known_args()[0]
@@ -45,12 +49,19 @@ except:
 # load an image (into shared CPU/GPU memory)
 img, width, height = jetson.utils.loadImageRGBA(opt.file_in)
 
+# create the camera and display
+camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
+
+#img, width, height = camera.CaptureRGBA() #no RGB
+img = jetson.utils.cudaAllocMapped(opt.height * opt.width * 4 * ctypes.sizeof(ctypes.c_float))
+
 # load the recognition network
 net = jetson.inference.imageNet(opt.network, sys.argv)
 
 # classify the image
 #class_idx, confidence = net.Classify(img, width, height)
 class_idx, confidence = (0, 0.5)
+#class_idx, confidence = net.Classify(image, width, height)
 
 # find the object description
 #class_desc = net.GetClassDesc(class_idx)
@@ -65,6 +76,6 @@ net.PrintProfilerTimes()
 # overlay the result on the image
 if opt.file_out is not None:
 	font = jetson.utils.cudaFont(size=jetson.utils.adaptFontSize(width))	
-	font.OverlayText(img, width, height, "{:f}% {:s}".format(confidence * 100, class_desc), 10, 10, font.White, font.Gray40)
+	#font.OverlayText(ctypes.byref(img), width, height, "{:f}% {:s}".format(confidence * 100, class_desc), 10, 10, font.White, font.Gray40)
 	jetson.utils.cudaDeviceSynchronize()
 	jetson.utils.saveImageRGBA(opt.file_out, img, width, height)
